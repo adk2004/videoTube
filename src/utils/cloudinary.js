@@ -15,7 +15,7 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",// detects wether the file is image audi pdf etc etc..
     });
     //file has been uploaded successfully
-    console.log("File has been uloaded successfully", response.url);
+    // console.log("File has been uloaded successfully", response.url);
     fs.unlinkSync(localFilePath); // remove the locally saved file after successful upload
     // console.log(response);
     return response;
