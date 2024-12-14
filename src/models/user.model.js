@@ -31,6 +31,7 @@ const userSchema = new Schema(
     },
     coverImage: {
       type: String, // cloudinary url
+      default: null,
     },
     watchHistory: [
       {
@@ -44,6 +45,7 @@ const userSchema = new Schema(
     },
     refreshToken: {
       type: String,
+      default: null,
     },
   },
   {

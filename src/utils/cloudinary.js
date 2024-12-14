@@ -12,7 +12,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!localFilePath) return null;
     //upload the file on cloudinary
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto",// detects wether the file is image audi pdf etc etc..
+      resource_type: "auto", // detects wether the file is image audi pdf etc etc..
     });
     //file has been uploaded successfully
     // console.log("File has been uloaded successfully", response.url);
@@ -20,9 +20,25 @@ const uploadOnCloudinary = async (localFilePath) => {
     // console.log(response);
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath) // remove the locally saved file in case of failure
+    fs.unlinkSync(localFilePath); // remove the locally saved file in case of failure
     return null;
   }
 };
 
-export {uploadOnCloudinary};
+const deleteFromCloudinary = async (publicUrl) => {
+  try {
+    if (!publicUrl) {
+      return null;
+    }
+    const parts = publicUrl.split("/");
+    const fileWithExtension = parts[parts.length - 1]; // e.g., "image_id.jpg"
+    const publicId = fileWithExtension.split(".")[0]; // Remove extension
+    const result = await cloudinary.api.delete_resources([publicId]);
+    return result;
+  } catch (error) {
+    console.error(error.message);
+    throw error;
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
