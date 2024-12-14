@@ -390,7 +390,7 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = User.aggregate([
+  const user = await User.aggregate([
     {
       $match: {
         _id: new mongoose.Types.ObjectId(req.user._id),
@@ -431,10 +431,10 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  if (!user) {
+  if (!user?.length) {
     throw new ApiError(401, "User unauthorized to get watch history");
   }
-  return res.status.json(
+  return res.status(200).json(
     new ApiResponse(
       200,
       user[0].watchHistory,
