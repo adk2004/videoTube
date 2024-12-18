@@ -434,13 +434,15 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   if (!user?.length) {
     throw new ApiError(401, "User unauthorized to get watch history");
   }
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      user[0].watchHistory,
-      "Watch history fetched successfully"
-    )
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
+      )
+    );
 });
 
 export {

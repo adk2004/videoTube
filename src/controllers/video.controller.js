@@ -1,18 +1,23 @@
 import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
+import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const {
     page = 1,
     limit = 10,
     query,
-    sortBy = "views",
-    sortType = "desc",
+    sortBy = "createdAt",
+    sortType = "asc",
   } = req.query;
 
   // Validate input
@@ -167,20 +172,206 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
+  // we need to populate the owner details ,likes count , isLiked
+  // we need to increase the views of the video by 1 and add to watch history
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid or missing VideoId");
+  }
+  if (!req.user?._id) {
+    throw new ApiError(404, "Unauthorized request");
+  }
+  const pipeline = [
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(videoId),
+        isPublished: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+              fullName: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes",
+      },
+    },
+    {
+      $addFields: {
+        likesCount: {
+          $size: "$likes",
+        },
+        isLiked: {
+          $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
+        },
+      },
+    },
+    {
+      $project: {
+        videoFile: 1,
+        thumbnail: 1,
+        title: 1,
+        description: 1,
+        duration: 1,
+        views: 1,
+        createdAt: 1,
+        owner: 1,
+        isPublished: 1,
+        likesCount: 1,
+        isLiked: 1,
+      },
+    },
+  ];
+
+  const video = await Video.aggregate(pipeline);
+
+  if (!video?.length) {
+    throw new ApiError(404, "Video not found");
+  }
+  // update views and user watch history
+  await Promise.all([
+    Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } }),
+    User.findByIdAndUpdate(req.user?._id, {
+      $addToSet: { watchHistory: videoId },
+    }),
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video[0], "Video fetched Successfully"));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: update video details like title, description, thumbnail
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Video Id is not valid");
+  }
+  if (!isValidObjectId(req.user?._id)) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  const { title, description } = req.body;
+  if (!title?.trim() || !description?.trim()) {
+    throw new ApiError(400, "Invalid title or description");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video does not exist");
+  }
+  if (!video.owner.equals(req.user.id)) {
+    throw new ApiError(403, "User is not authorized to toggle publish status");
+  }
+  try {
+    video.title = title.trim();
+    video.description = description.trim();
+    if (req.file) {
+      const thumbnailLocalPath = req.file.path;
+      const newThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+      await deleteFromCloudinary(video.thumbnail);
+      video.thumbnail = newThumbnail.url;
+    }
+    const updatedVideo = await video.save();
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
+  } catch (error) {
+    throw new ApiError(500, error.meassge || "Error while updating the video");
+  }
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: delete video
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid or missing VideoId");
+  }
+  if (!isValidObjectId(req.user?._id)) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video does not exist");
+  }
+  if (video.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "User is not authorized to delete the video");
+  }
+
+  try {
+    await Promise.all([
+      Video.findByIdAndDelete(videoId),
+      deleteFromCloudinary(video.videoFile),
+      deleteFromCloudinary(video.thumbnail),
+      Like.deleteMany({ video: videoId }),
+      Comment.deleteMany({ video: videoId }),
+    ]);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Video deleted successfully"));
+  } catch (error) {
+    throw new ApiError(
+      500,
+      error.message || "Something went wrong while deleting the video"
+    );
+  }
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Video Id is not valid");
+  }
+  if (!isValidObjectId(req.user?._id)) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video does not exist");
+  }
+  if (!video.owner.equals(req.user.id)) {
+    throw new ApiError(403, "User is not authorized to toggle publish status");
+  }
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      isPublished: !video.isPublished,
+    },
+    { new: true }
+  );
+  if (!updatedVideo) {
+    throw new ApiError(500, "Error while toggling publish status");
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { isPublished: updatedVideo.isPublished },
+        "Publish status updated successfully"
+      )
+    );
 });
 
 export {
