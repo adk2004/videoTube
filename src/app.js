@@ -18,10 +18,12 @@ app.use(cookieParser());
 
 // import routes
 
-import userRouter from "./routes/user.routes.js"
-import videoRouter from "./routes/video.routes.js"
+import userRouter from "./routes/user.routes.js";
+import videoRouter from "./routes/video.routes.js";
+import likeRouter from "./routes/like.routes.js";
 
-app.use("/api/v1/users",userRouter)
-app.use("/api/v1/videos",videoRouter)
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/videos", videoRouter);
+app.use("/api/v1/likes", likeRouter);
 
 export { app };

@@ -5,14 +5,17 @@ const likeSchema = new Schema(
     comment: {
       type: Schema.Types.ObjectId,
       ref: "Comment",
+      default: null,
     },
     video: {
       type: Schema.Types.ObjectId,
       ref: "Video",
+      default: null,
     },
     post: {
       type: Schema.Types.ObjectId,
       ref: "Post",
+      default: null,
     },
     likedBy: {
       type: Schema.Types.ObjectId,

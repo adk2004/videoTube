@@ -36,8 +36,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
     {
       $match: {
         $or: [
-          { title: { $regex: query, $options: "i" } }, // Correct $regex syntax
-          { description: { $regex: query, $options: "i" } }, // Correct $regex syntax
+          { title: { $regex: query, $options: "i" } },
+          { description: { $regex: query, $options: "i" } },
         ],
         isPublished: true,
       },
