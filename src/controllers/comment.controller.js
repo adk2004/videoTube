@@ -54,9 +54,28 @@ const getVideoComments = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "comment",
+        as: "likes",
+      },
+    },
+    {
+      $addFields: {
+        likesCount: { $size: "$likes" },
+        isLiked: { $in: [req.user?._id, "$likes.likedBy"] },
+      },
+    },
+    {
+      $sort: { createdAt: -1 },
+    },
+    {
       $project: {
         owner: 1,
         content: 1,
+        likesCount: 1,
+        isLiked: 1,
       },
     },
   ];
@@ -161,9 +180,7 @@ const deleteComment = asyncHandler(async (req, res) => {
     }
     return res
       .status(200)
-      .json(
-        new ApiResponse(200, {}, "Comment deleted successfully")
-      );
+      .json(new ApiResponse(200, {}, "Comment deleted successfully"));
   } catch (error) {
     throw new ApiError(
       error.status || 500,

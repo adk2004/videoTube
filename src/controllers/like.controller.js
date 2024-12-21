@@ -3,6 +3,9 @@ import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.model.js";
+import { Comment } from "../models/comment.model.js";
+import { Post } from "../models/post.model.js";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -12,6 +15,10 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
   }
   if (!isValidObjectId(req.user?._id)) {
     throw new ApiError(401, "Unauthorized request");
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "video doesnot exist");
   }
   try {
     const like = await Like.findOne({
@@ -43,6 +50,10 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   if (!isValidObjectId(req.user?._id)) {
     throw new ApiError(401, "Unauthorized request");
   }
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    throw new ApiError(404, "comment doesnot exist");
+  }
   try {
     const like = await Like.findOne({
       comment: commentId,
@@ -72,6 +83,10 @@ const togglePostLike = asyncHandler(async (req, res) => {
   }
   if (!isValidObjectId(req.user?._id)) {
     throw new ApiError(401, "Unauthorized request");
+  }
+  const post = await Post.findById(postId);
+  if (!post) {
+    throw new ApiError(404, "post doesnot exist");
   }
   try {
     const like = await Like.findOne({
@@ -142,6 +157,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
               owner: 1,
               thumbnail: 1,
               createdAt: 1,
+              videoFile: 1,
+              streamingUrl: 1,
             },
           },
         ],
