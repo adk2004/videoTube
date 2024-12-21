@@ -10,6 +10,7 @@ import {
   uploadOnCloudinary,
   deleteFromCloudinary,
   generateStreamingUrl,
+  uploadVideo,
 } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -135,22 +136,20 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const videoFileLocalPath = req.files.videoFile[0].path;
   const thumbnailLocalPath = req.files.thumbnail[0].path;
 
-  const videoFile = await uploadOnCloudinary(videoFileLocalPath);
+  const videoFile = await uploadVideo(videoFileLocalPath);
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
-  if (!videoFile || !videoFile.url) {
+  if (!videoFile) {
     throw new ApiError(500, "Error while uploading video file to Cloudinary");
   }
-
-  const streamingUrl = generateStreamingUrl(videoFile.url);
 
   if (!thumbnail || !thumbnail.url) {
     throw new ApiError(500, "Error while uploading thumbnail to Cloudinary");
   }
-  console.log(videoFile, "\n");
+  // console.log(videoFile, "\n");
   const video = await Video.create({
-    videoFile: videoFile.url,
-    streamingUrl: streamingUrl,
+    videoFile: videoFile.videoUrl,
+    streamingUrl: videoFile.masterPlaylistUrl,
     thumbnail: thumbnail.url,
     title: title.trim(),
     description: description.trim(),
