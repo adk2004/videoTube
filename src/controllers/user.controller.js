@@ -367,6 +367,26 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup: {
+        from: "videos",
+        localField: "_id",
+        foreignField: "owner",
+        as: "videos",
+        pipeline: [
+          {
+            $project: {
+              videoFile: 1,
+              streamingUrl: 1,
+              thumbnail: 1,
+              title: 1,
+              views: 1,
+              description: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
       $project: {
         fullName: 1,
         username: 1,
@@ -376,6 +396,7 @@ const getUserChannelDetails = asyncHandler(async (req, res) => {
         isSubscribed: 1,
         avatar: 1,
         coverImage: 1,
+        videos: 1,
       },
     },
   ]);

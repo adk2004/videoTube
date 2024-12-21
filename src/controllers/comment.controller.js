@@ -89,7 +89,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, comments, "Comments fetched successfully"));
   } catch (error) {
     throw new ApiError(
-      500,
+      error.statusCode || 500,
       error.message || "Something went wrong while fetching comments"
     );
   }
@@ -156,7 +156,7 @@ const updateComment = asyncHandler(async (req, res) => {
       );
   } catch (error) {
     throw new ApiError(
-      error.status || 500,
+      error.statusCode || 500,
       error.message || "Something went wrong while updating comment"
     );
   }
@@ -183,7 +183,7 @@ const deleteComment = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, {}, "Comment deleted successfully"));
   } catch (error) {
     throw new ApiError(
-      error.status || 500,
+      error.statusCode || 500,
       error.message || "Something went wrong while deleting comment"
     );
   }
