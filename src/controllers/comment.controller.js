@@ -83,7 +83,7 @@ const addComment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid or missing videoId");
   }
   if (!req.user || !isValidObjectId(req.user._id)) {
-    throw new ApiError(401, "Unathorized request");
+    throw new ApiError(401, "Unauthorized request");
   }
   if (!content?.trim()) {
     throw new ApiError(400, "Content cannot be empty");
@@ -102,8 +102,74 @@ const addComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, comment, "Comment added successfully"));
 });
 
-const updateComment = asyncHandler(async (req, res) => {});
+const updateComment = asyncHandler(async (req, res) => {
+  const { content } = req.body;
+  const { commentId } = req.params;
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "Invalid or missing commentId");
+  }
+  if (!req.user || !isValidObjectId(req.user._id)) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  if (!content?.trim()) {
+    throw new ApiError(400, "Content cannot be empty");
+  }
+  try {
+    const updatedComment = await Comment.findOneAndUpdate(
+      {
+        _id: commentId,
+        owner: req.user._id,
+      },
+      {
+        content: content,
+      },
+      {
+        new: true,
+      }
+    );
+    if (!updatedComment) {
+      throw new ApiError(403, "Unauthorized request or comment does not exist");
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, updatedComment, "Comment updated successfully")
+      );
+  } catch (error) {
+    throw new ApiError(
+      error.status || 500,
+      error.message || "Something went wrong while updating comment"
+    );
+  }
+});
 
-const deleteComment = asyncHandler(async (req, res) => {});
+const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "Invalid or missing commentId");
+  }
+  if (!req.user || !isValidObjectId(req.user._id)) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+  try {
+    const deletedComment = await Comment.findOneAndDelete({
+      _id: commentId,
+      owner: req.user._id,
+    });
+    if (!deletedComment) {
+      throw new ApiError(403, "Unauthorized request or comment does not exist");
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, {}, "Comment deleted successfully")
+      );
+  } catch (error) {
+    throw new ApiError(
+      error.status || 500,
+      error.message || "Something went wrong while deleting comment"
+    );
+  }
+});
 
 export { getVideoComments, addComment, updateComment, deleteComment };
