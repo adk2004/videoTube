@@ -41,4 +41,19 @@ const deleteFromCloudinary = async (publicUrl) => {
   }
 };
 
-export { uploadOnCloudinary, deleteFromCloudinary };
+const generateStreamingUrl = (publicUrl) => {
+  try {
+    if (!publicUrl || typeof publicUrl !== "string") {
+      return null;
+    }
+    const parts = publicUrl.split("/");
+    const fileWithExtension = parts[parts.length - 1];
+    const publicId = fileWithExtension.split(".")[0];
+    return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload/${publicId}.m3u8`;
+  } catch (error) {
+    console.error(error.message);
+    throw error;
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary ,generateStreamingUrl };

@@ -9,6 +9,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
+  generateStreamingUrl,
 } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -141,12 +142,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error while uploading video file to Cloudinary");
   }
 
+  const streamingUrl = generateStreamingUrl(videoFile.url);
+
   if (!thumbnail || !thumbnail.url) {
     throw new ApiError(500, "Error while uploading thumbnail to Cloudinary");
   }
   console.log(videoFile, "\n");
   const video = await Video.create({
     videoFile: videoFile.url,
+    streamingUrl: streamingUrl,
     thumbnail: thumbnail.url,
     title: title.trim(),
     description: description.trim(),
@@ -232,6 +236,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     {
       $project: {
         videoFile: 1,
+        streamingUrl: 1,
         thumbnail: 1,
         title: 1,
         description: 1,

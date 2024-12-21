@@ -162,6 +162,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         description: "$video.description",
         owner: "$video.owner",
         thumbnail: "$video.thumbnail",
+        videoFile: "$video.videoFile",
+        streamingUrl: "$video.streamingUrl",
         createdAt: "$video.createdAt",
       },
     },
