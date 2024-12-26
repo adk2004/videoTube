@@ -42,6 +42,10 @@ const getUserPosts = asyncHandler(async (req, res) => {
   if (!isValidObjectId(userId)) {
     throw new ApiError(400, "Invalid userId");
   }
+  const user = await User.findById(userId);
+  if(!user){
+    throw new ApiError(404,"User does not exits")
+  }
   try {
     const userPosts = await Post.aggregate([
       {
