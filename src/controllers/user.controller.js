@@ -122,6 +122,10 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessandRefreshTokens(
     user._id
   );
+  // Save the refreshToken in the database
+  user.refreshToken = refreshToken;
+  await user.save();
+
   return res
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)

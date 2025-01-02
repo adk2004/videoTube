@@ -41,7 +41,14 @@ const userSchema = new Schema(
     ],
     password: {
       type: String,
-      required: [true, "password is required"],
+      required: function () {
+        return !this.googleId; // Password required only if googleId is not present
+      },
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null/undefined values for non-Google users
     },
     refreshToken: {
       type: String,
@@ -54,7 +61,7 @@ const userSchema = new Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+  if (this.isModified("password") && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   return next();
@@ -70,7 +77,7 @@ userSchema.methods.generateAccessToken = function () {
       _id: this._id,
       email: this.email,
       username: this.username,
-      fullName: this.fulName,
+      fullName: this.fullName,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
@@ -78,6 +85,7 @@ userSchema.methods.generateAccessToken = function () {
     }
   );
 };
+
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {

@@ -1,6 +1,8 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { urlencoded } from "express";
+import "./middlewares/passport.middleware.js";
+import passport from "passport";
 
 const app = express();
 
@@ -11,6 +13,7 @@ app.use(
   })
 );
 
+app.use(passport.initialize());
 app.use(express.json({ limit: "20kb" }));
 app.use(urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
@@ -26,6 +29,7 @@ import postRouter from "./routes/post.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import subscriptionRouter from "./routes/subscription.routes.js";
 import playlistRouter from "./routes/playlist.routes.js";
+import oAuthRouter from "./routes/oAuth.routes.js";
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
@@ -35,5 +39,6 @@ app.use("/api/v1/posts", postRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
 app.use("/api/v1/playlists", playlistRouter);
+app.use("/api/v1/google", oAuthRouter);
 
 export { app };
