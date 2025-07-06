@@ -24,6 +24,7 @@ VideoTube is a backend project designed to provide a robust API for video hostin
 - **Multer**: npm package for file Upload
 - **Cloudinary**: Cloud-based video storage and processing
 - **JWT**: Authentication and session management
+- **Passport.js**: Google oAuth
 
 ---
 
